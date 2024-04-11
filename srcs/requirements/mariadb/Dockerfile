@@ -1,26 +1,25 @@
-# alpine 3.15 Version을 기반으로 한다.
-FROM alpine:3.15
+FROM alpine:3.18
 
-# no-cache 옵션은 /var/cache/apk/* 에 garbage가 남지 않음.
-# alpine3.15 기준 mariadb-10.6.8-r0 LTS
-# SQL문을 직접 넣기위해 client 필요
-# /etc/init.d/mariadb setup 이후 mysqld 재시작을 위해 openrc 필요
+RUN apk update && \
+    apk upgrade && \
+    apk add --no-cache mariadb mariadb-client vim\
+    && chown -R mysql:mysql /var/lib/mysql 
 
-RUN apk add --no-cache mariadb && \
-    mariadb-install-db
+ADD https://github.com/just-containers/s6-overlay/releases/download/v3.1.6.2/s6-overlay-noarch.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz
+ADD https://github.com/just-containers/s6-overlay/releases/download/v3.1.6.2/s6-overlay-x86_64.tar.xz /tmp
+RUN tar -C / -Jxpf /tmp/s6-overlay-x86_64.tar.xz
 
-# mysql_secure_installation 설정이 담긴 sql쿼리문
-# COPY mysql_secure_installation.sql /home/
+COPY tools/entry.sh /tmp/entry.sh
+RUN chmod 777 /tmp/entry.sh && \
+    mkdir -p /run/mysqld && \
+    chown mysql:mysql /run/mysqld && \
+    sed -i "s/skip-networking/# skip-networking/g" /etc/my.cnf.d/mariadb-server.cnf && \
+    sed -i "s/#bind-address=0.0.0.0/bind-address=0.0.0.0/g" /etc/my.cnf.d/mariadb-server.cnf
 
-# COPY mariadb-server.cnf /etc/my.cnf.d/
+EXPOSE 3306
 
-# wordpress database 설정
-# COPY create_wordpressdb_user.sql /home/
+ENTRYPOINT  [ "/init"]
 
-# COPY start_mariadb.sh /home
+CMD [ "/tmp/entry.sh" ]
 
-# VOLUME ["/var/lib/mysql"]
-
-# DBMS포트는 8475를 사용한다.
-# EXPOSE 8475
-# ENTRYPOINT sh /home/start_mariadb.sh
