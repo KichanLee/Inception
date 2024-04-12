@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   nginx:
@@ -7,7 +7,7 @@ services:
     ports:
       - "443:443"
     networks:
-      - inception
+      - front
     volumes:
       - wp-volume:/var/www/html
     restart: always
@@ -22,7 +22,8 @@ services:
     env_file:
       - .env
     networks:
-      - inception
+      - front
+      - back
     restart: always
     volumes:
       - db-volume:/var/lib/mysql
@@ -35,7 +36,8 @@ services:
     env_file:
       - .env
     networks:
-      - inception
+      - front
+      - back
     volumes:
       - wp-volume:/var/www/html
     restart: always
@@ -44,16 +46,18 @@ volumes:
   db-volume:
     driver: local
     driver_opts:
-      device: /Users/kichan/Desktop/inception/data/db
+      device: /Users/kichlee/Desktop/inception/data/db
       type: none
       o: bind
   wp-volume:
     driver: local
     driver_opts:
-      device: /Users/kichan/Desktop/inception/data/web
+      device: /Users/kichlee/Desktop/inception/data/web
       type: none
       o: bind
 
 networks:
-  inception:
+  front:
+    driver: bridge
+  back:
     driver: bridge
